@@ -46,10 +46,10 @@ function extrapolatePower(start, end, time, extendedTime) {
 
 function createBaseInterval(type, duration, powerLow, powerHigh) {
     return {
-	Type: type,
-	Duration: duration,
-	PowerLow: powerLow,
-	PowerHigh: powerHigh,
+	type: type,
+	duration: duration,
+	powerLow: powerLow,
+	powerHigh: powerHigh,
     }
 }
 
@@ -78,10 +78,10 @@ function getBaseIntervals(workout) {
 function mergeIntervals(intervals) {
     // Merge adjacent STEADY_STATE intervals with the same power (example: 18127-recess-4)
     for (let i = intervals.length - 2; i >= 0; i--) {
-	if (intervals[i].Type === IntervalType.STEADY_STATE &&
-	    intervals[i + 1].Type === IntervalType.STEADY_STATE &&
-	    intervals[i].PowerLow === intervals[i + 1].PowerLow) {
-	    intervals[i].Duration += intervals[i + 1].Duration;
+	if (intervals[i].type === IntervalType.STEADY_STATE &&
+	    intervals[i + 1].type === IntervalType.STEADY_STATE &&
+	    intervals[i].powerLow === intervals[i + 1].powerLow) {
+	    intervals[i].duration += intervals[i + 1].duration;
 	    intervals.splice(i + 1, 1);
 	}
     }
@@ -90,12 +90,12 @@ function mergeIntervals(intervals) {
 // Find over-under intervals (example: 5516-mono)
 function convertOverUnders(intervals) {
     // Calculate repeat counts for alternating identical STEADY_STATE intervals
-    let repeat = intervals.map(i => i.Type === IntervalType.STEADY_STATE ? 1 : 0);
+    let repeat = intervals.map(i => i.type === IntervalType.STEADY_STATE ? 1 : 0);
 
     for (let i = intervals.length - 3; i >= 0; i--) {
-	if (intervals[i].Type === IntervalType.STEADY_STATE &&
-	    intervals[i].Duration === intervals[i + 2].Duration &&
-	    intervals[i].PowerLow === intervals[i + 2].PowerLow) {
+	if (intervals[i].type === IntervalType.STEADY_STATE &&
+	    intervals[i].duration === intervals[i + 2].duration &&
+	    intervals[i].powerLow === intervals[i + 2].powerLow) {
 	    repeat[i] = repeat[i + 2] + 1;
 	}
     }
@@ -104,12 +104,12 @@ function convertOverUnders(intervals) {
     for (let i = 0; i + 3 < intervals.length; i++) {
 	if (repeat[i] > 1 && repeat[i + 1] > 1) {
 	    let overUnder = {
-		Type: IntervalType.OVER_UNDER,
+		type: IntervalType.OVER_UNDER,
 		Repeat: Math.min(repeat[i], repeat[i + 1]),
-		OnDuration: intervals[i].Duration,
-		OffDuration: intervals[i + 1].Duration,
-		OnPower: intervals[i].PowerLow,
-		OffPower: intervals[i + 1].PowerLow,
+		onDuration: intervals[i].duration,
+		offDuration: intervals[i + 1].duration,
+		onPower: intervals[i].powerLow,
+		offPower: intervals[i + 1].powerLow,
 	    };
 	    intervals.splice(i, 2 * overUnder.Repeat, overUnder);
 	    repeat.splice(i, 2 * overUnder.Repeat, 0);
@@ -146,20 +146,20 @@ function generateZwiftWorkout(workout) {
 	`\t<workout>\n`;
 
     getZwiftIntervals(workout).forEach(function(i) {
-	content += `\t\t<${i.Type} `;
-	switch (i.Type) {
+	content += `\t\t<${i.type} `;
+	switch (i.type) {
 	case IntervalType.STEADY_STATE:
-	    content += `Duration="${i.Duration}" Power="${norm(i.PowerLow)}"/>\n`;
+	    content += `Duration="${i.duration}" Power="${norm(i.powerLow)}"/>\n`;
 	    break;
 	case IntervalType.RAMP:
-	    content += `Duration="${i.Duration}" PowerLow="${norm(i.PowerLow)}" PowerHigh="${norm(i.PowerHigh)}"/>\n`;
+	    content += `Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" PowerHigh="${norm(i.powerHigh)}"/>\n`;
 	    break;
 	case IntervalType.OVER_UNDER:
-	    content += `Repeat="${i.Repeat}" OnDuration="${i.OnDuration}" OffDuration="${i.OffDuration}" ` +
-		`OnPower="${norm(i.OnPower)}" OffPower="${norm(i.OffPower)}"/>\n`;
+	    content += `Repeat="${i.Repeat}" OnDuration="${i.onDuration}" OffDuration="${i.offDuration}" ` +
+		`OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>\n`;
 	    break;
 	default:
-	    console.log(`Unknown Zwift interval type: ${i.Type}`);
+	    console.log(`Unknown Zwift interval type: ${i.type}`);
 	    break;
 	}
     });
