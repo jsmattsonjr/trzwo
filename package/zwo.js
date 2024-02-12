@@ -39,52 +39,57 @@ async function fetchWorkoutDetails(workoutId) {
     return await response.json();
 }
 
-function extrapolatePower(start, end, time, extendedTime) {
-    const deltaPerSecond = (end - start) / time;
-    return Math.round(start + extendedTime * deltaPerSecond);
+/*
+ * Calculate the slope (i.e. delta(ftpPercent) / delta(seconds))
+ * from workoutData[i] to workoutData[i + 1].
+ */
+function slope(workoutData, i) {
+    const deltaPower = workoutData[i + 1].ftpPercent - workoutData[i].ftpPercent,
+	  deltaTime = workoutData[i + 1].seconds - workoutData[i].seconds;
+
+    return deltaPower / deltaTime;
 }
 
-function createBaseInterval(type, duration, powerLow, powerHigh) {
-    return {
-	type: type,
-	duration: duration,
-	powerLow: powerLow,
-	powerHigh: powerHigh,
+/*
+ * Determine if there is a slope change at workoutData[i].
+ */
+function slopeChange(workoutData, i) {
+    // To terminate the final interval, we declare a slope change at the last data point.
+    if (i + 1 == workoutData.length) {
+	return true;
     }
+    // No slope changes beyond the last data point.
+    if (i >= workoutData.length) {
+	return false;
+    }
+    const epsilon = 0.001,
+	  slopeLeft = slope(workoutData, i - 1),
+	  slopeRight = slope(workoutData, i);
+
+    return Math.abs(slopeLeft - slopeRight) >= epsilon;
 }
 
-function getBaseIntervals(workout) {
-    let baseIntervals = [];
+/*
+ * The base intervals are either STEADY_STATE or RAMP intervals. We
+ * will look for OVER_UNDER intervals after determining the base
+ * intervals.
+ */
+function getBaseIntervals(workoutData) {
+    let intervals = [],
+	intervalStart = 0;
 
-    workout.intervalData.forEach(function(id) {
-	// Skip the 'Workout' interval, which spans the entire workout
-	if (id.Name !== 'Workout') {
-	    const duration = id.End - id.Start;
-	    if (duration > 0) {
-		// Note that workoutData.seconds is actually milliseconds
-		const penultimate = workout.workoutData.find(wd => wd.seconds === (id.End - 1) * 1000);
-		const powerLow = id.StartTargetPowerPercent;
-		const powerHigh = !penultimate || duration < 2 ? powerLow :
-		      extrapolatePower(powerLow, penultimate.ftpPercent, duration - 1, duration);
-		const type = powerLow === powerHigh ? IntervalType.STEADY_STATE : IntervalType.RAMP;
-		baseIntervals.push(createBaseInterval(type, duration, powerLow, powerHigh));
-	    }
-	}
-    });
-
-    return baseIntervals;
-}
-
-function mergeIntervals(intervals) {
-    // Merge adjacent STEADY_STATE intervals with the same power (example: 18127-recess-4)
-    for (let i = intervals.length - 2; i >= 0; i--) {
-	if (intervals[i].type === IntervalType.STEADY_STATE &&
-	    intervals[i + 1].type === IntervalType.STEADY_STATE &&
-	    intervals[i].powerLow === intervals[i + 1].powerLow) {
-	    intervals[i].duration += intervals[i + 1].duration;
-	    intervals.splice(i + 1, 1);
+    for (let i = 1; i < workoutData.length; i++) {
+	if (slopeChange(workoutData, i) && !slopeChange(workoutData, i + 1)) {
+	    const duration = workoutData[i].seconds - workoutData[intervalStart].seconds,
+		  powerLow = workoutData[intervalStart].ftpPercent,
+		  powerHigh = Math.round(powerLow + duration * slope(workoutData, intervalStart)),
+		  type = powerLow === powerHigh ? IntervalType.STEADY_STATE : IntervalType.RAMP;
+	    intervals.push({type: type, duration: duration, powerLow: powerLow, powerHigh: powerHigh});
+	    intervalStart = i;
 	}
     }
+
+    return intervals;
 }
 
 // Find over-under intervals (example: 5516-mono)
@@ -117,9 +122,18 @@ function convertOverUnders(intervals) {
     }
 }
 
-function getZwiftIntervals(workout) {
-    let intervals = getBaseIntervals(workout);
-    mergeIntervals(intervals);
+/*
+ * TrainerRoad's workoutData.seconds is actually milliseconds; convert
+ * milliseconds to seconds.
+ */
+function fixTime(workoutData) {
+    workoutData.forEach(d => {d.seconds /= 1000;});
+
+    return workoutData;
+}
+
+function getZwiftIntervals(workoutData) {
+    let intervals = getBaseIntervals(fixTime(workoutData));
     convertOverUnders(intervals);
     return intervals;
 }
@@ -145,7 +159,7 @@ function generateZwiftWorkout(workout) {
 	`\t<tags>${tags}\n\t</tags>\n` +
 	`\t<workout>\n`;
 
-    getZwiftIntervals(workout).forEach(function(i) {
+    getZwiftIntervals(workout.workoutData).forEach(function(i) {
 	content += `\t\t<${i.type} `;
 	switch (i.type) {
 	case IntervalType.STEADY_STATE:
