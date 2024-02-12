@@ -164,7 +164,7 @@ function generateZwiftWorkout(workout) {
 	}
     });
 
-    content += `\t</workout>\n</workout_file>`;
+    content += `\t</workout>\n</workout_file>\n`;
 
     return {
 	filename: `${name}.zwo`,
