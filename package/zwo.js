@@ -1,205 +1,35 @@
-const observer = new MutationObserver((mutations, obs) => {
-    checkAndModifyButtons();
-});
-
-observer.observe(document, { childList: true, subtree: true });
-
-checkAndModifyButtons();
-
-function checkAndModifyButtons() {
-    // Use querySelectorAll to get all buttons, then filter them by their text content
-    const allButtons = document.getElementsByTagName('button');
-    const openInAppButton = Array.from(allButtons).find(button => button.textContent === 'Open in App');
-    let zwoButton = document.getElementById('ZWO');
-
-    if (openInAppButton && !zwoButton) {
-	const grandParent = openInAppButton.parentElement.parentElement;
-	const clone = grandParent.cloneNode(true);
-
-	const clonedButton = clone.getElementsByTagName('button')[0];
-
-        zwoButton = document.createElement('button');
-        zwoButton.textContent = zwoButton.id = 'ZWO';
-        zwoButton.className = openInAppButton.className;
-        zwoButton.addEventListener('click', function() {
-	    const workoutId = document.location.href.split('/').pop().split('-')[0];
-	    downloadZWO(workoutId);
-        });
-
-	clonedButton.parentNode.replaceChild(zwoButton, clonedButton);
-
-        grandParent.parentNode.insertBefore(clone, grandParent.nextSibling);
-    } else if (zwoButton && !openInAppButton) {
-	const grandParent = zwoButton.parentElement.parentElement;
-	grandParent.parentNode.removeChild(grandParent);
-    }
-}
-
-async function downloadZWO(workoutId) {
-    try {
-	const workoutDetails = await fetchWorkoutDetails(workoutId);
-	const workout = workoutDetails.Workout;
-	const zwiftWorkout = generateZwiftWorkout(workout);
-	downloadStringAsFile(zwiftWorkout.content, zwiftWorkout.filename);
-    } catch (error) {
-	console.error('ZWO export failure: ', error);
-    }
-}
-
-async function fetchWorkoutDetails(workoutId) {
-    const url = `https://www.trainerroad.com/api/workoutdetails/${workoutId}`;
-    const response = await fetch(url, {credentials: 'include'});
-    if (!response.ok) {
-	throw new Error(`Error fetching ${url}; status: ${response.status}`);
-    }
-    return await response.json();
-}
-
 const IntervalType = Object.freeze({
     STEADY_STATE: 'SteadyState',
     RAMP: 'Ramp',
     OVER_UNDER: 'IntervalsT',
 });
 
-function generateZwiftWorkout(workout) {
-    const name = workout.Details.WorkoutName.trimEnd();
-    const workoutDescription = `${convertHTML(workout.Details.WorkoutDescription)}\n`;
-    const goalDescription = `${convertHTML(workout.Details.GoalDescription)}\n`;
-    const zone = workout.Details.Zones[0].Description;
-
-    let content = `<workout_file>\n` +
-	`\t<author>TrainerRoad</author>\n` +
-	`\t<name>${name}</name>\n` +
-	`\t<description><![CDATA[${workoutDescription}\n${goalDescription}]]></description>\n` +
-	`\t<sportType>bike</sportType>\n` +
-	`\t<tags>\n`+
-	`\t\t<tag name="${zone}"/>\n` +
-        `\t</tags>\n` +
-	`\t<workout>\n`;
-
-    getZwiftIntervals(workout).forEach(function(i) {
-	content += `\t\t<${i.Type} `;
-	switch (i.Type) {
-	case IntervalType.STEADY_STATE:
-	    content += `Duration="${i.Duration}" Power="${norm(i.PowerLow)}"/>\n`;
-	    break;
-	case IntervalType.RAMP:
-	    content += `Duration="${i.Duration}" PowerLow="${norm(i.PowerLow)}" PowerHigh="${norm(i.PowerHigh)}"/>\n`;
-	    break;
-	case IntervalType.OVER_UNDER:
-	    content += `Repeat="${i.Repeat}" OnDuration="${i.OnDuration}" OffDuration="${i.OffDuration}" ` +
-		`OnPower="${norm(i.OnPower)}" OffPower="${norm(i.OffPower)}"/>\n`;
-	    break;
-	default:
-	    console.log(`Unknown Zwift interval type: ${i.Type}`);
-	    break;
-	}
-    });
-
-    content += `\t</workout>\n</workout_file>`;
-
-    return {
-	filename: `${name}.zwo`,
-	content: content,
-    }
-}
-
+/*
+ * Convert HTML content into plain text by removing HTML tags and
+ * ensuring spacing between sentences.
+ */
 function convertHTML(html) {
-    const temp = document.createElement("div");
-    temp.innerHTML = html;
-    return temp.textContent || temp.innerHTML || "";
+    if (!html) {
+	return '';
+    }
+
+    const text = new DOMParser().parseFromString(html, 'text/html').body.textContent;
+
+    return text.replace(/([\.?!])([A-Z])/g, '$1 $2');
 }
 
+/*
+ * Normalize a percentage value to a decimal string formatted to two
+ * decimal places.
+ */
 function norm(percentage) {
-    const value = percentage / 100;
-    return value.toFixed(2);
+    return (percentage / 100).toFixed(2);
 }
 
-function getZwiftIntervals(workout) {
-    let intervals = getBaseIntervals(workout);
-    mergeIntervals(intervals);
-    convertOverUnders(intervals);
-    return intervals;
-}
-
-function getBaseIntervals(workout) {
-    let baseIntervals = [];
-
-    workout.intervalData.forEach(function(id) {
-	// Skip the 'Workout' interval, which spans the entire workout
-	if (id.Name !== 'Workout') {
-	    const duration = id.End - id.Start;
-	    if (duration > 0) {
-		// Note that workoutData.seconds is actually milliseconds
-		const penultimate = workout.workoutData.find(wd => wd.seconds === (id.End - 1) * 1000);
-		const powerLow = id.StartTargetPowerPercent;
-		const powerHigh = !penultimate || duration < 2 ? powerLow :
-		      extrapolatePower(powerLow, penultimate.ftpPercent, duration - 1, duration);
-		const type = powerLow === powerHigh ? IntervalType.STEADY_STATE : IntervalType.RAMP;
-		baseIntervals.push(createBaseInterval(type, duration, powerLow, powerHigh));
-	    }
-	}
-    });
-
-    return baseIntervals;
-}
-
-function extrapolatePower(start, end, time, extendedTime) {
-    const deltaPerSecond = (end - start) / time;
-    return Math.round(start + extendedTime * deltaPerSecond);
-}
-
-function createBaseInterval(type, duration, powerLow, powerHigh) {
-    return {
-	Type: type,
-	Duration: duration,
-	PowerLow: powerLow,
-	PowerHigh: powerHigh,
-    }
-}
-
-function mergeIntervals(intervals) {
-    // Merge adjacent STEADY_STATE intervals with the same power (example: 18127-recess-4)
-    for (let i = intervals.length - 2; i >= 0; i--) {
-	if (intervals[i].Type === IntervalType.STEADY_STATE &&
-	    intervals[i + 1].Type === IntervalType.STEADY_STATE &&
-	    intervals[i].PowerLow === intervals[i + 1].PowerLow) {
-	    intervals[i].Duration += intervals[i + 1].Duration;
-	    intervals.splice(i + 1, 1);
-	}
-    }
-}
-
-// Find over-under intervals (example: 5516-mono)
-function convertOverUnders(intervals) {
-    // Calculate repeat counts for alternating identical STEADY_STATE intervals
-    let repeat = intervals.map(i => i.Type === IntervalType.STEADY_STATE ? 1 : 0);
-
-    for (let i = intervals.length - 3; i >= 0; i--) {
-	if (intervals[i].Type === IntervalType.STEADY_STATE &&
-	    intervals[i].Duration === intervals[i + 2].Duration &&
-	    intervals[i].PowerLow === intervals[i + 2].PowerLow) {
-	    repeat[i] = repeat[i + 2] + 1;
-	}
-    }
-
-    // Coalesce over-under sequences into a single OVER_UNDER interval
-    for (let i = 0; i + 3 < intervals.length; i++) {
-	if (repeat[i] > 1 && repeat[i + 1] > 1) {
-	    let overUnder = {
-		Type: IntervalType.OVER_UNDER,
-		Repeat: Math.min(repeat[i], repeat[i + 1]),
-		OnDuration: intervals[i].Duration,
-		OffDuration: intervals[i + 1].Duration,
-		OnPower: intervals[i].PowerLow,
-		OffPower: intervals[i + 1].PowerLow,
-	    };
-	    intervals.splice(i, 2 * overUnder.Repeat, overUnder);
-	    repeat.splice(i, 2 * overUnder.Repeat, 0);
-	}
-    }
-}
-
+/*
+ * Trigger a download of a given string as a file in the user's
+ * browser.
+ */
 function downloadStringAsFile(contentString, filename) {
     const blob = new Blob([contentString], {type: 'text/plain'});
     const url = URL.createObjectURL(blob);
@@ -214,3 +44,252 @@ function downloadStringAsFile(contentString, filename) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+/*
+ * Asynchronously fetch workout details from the TrainerRoad API endpoint.
+ */
+async function fetchWorkoutDetails(workoutId) {
+    const url = `https://www.trainerroad.com/api/workoutdetails/${workoutId}`;
+    const response = await fetch(url, {credentials: 'include'});
+    if (!response.ok) {
+	throw new Error(`Error fetching ${url}; status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+/*
+ * Calculate the slope (i.e. delta(ftpPercent) / delta(seconds))
+ * from workoutData[i] to workoutData[i + 1].
+ */
+function slope(workoutData, i) {
+    const deltaPower = workoutData[i + 1].ftpPercent - workoutData[i].ftpPercent;
+    const deltaTime = workoutData[i + 1].seconds - workoutData[i].seconds;
+
+    return deltaPower / deltaTime;
+}
+
+/*
+ * Determine if there is a slope change at workoutData[i].
+ */
+function slopeChange(workoutData, i) {
+    // To terminate the final interval, we declare a slope change at the last data point.
+    if (i + 1 == workoutData.length) {
+	return true;
+    }
+    // No slope changes beyond the last data point.
+    if (i >= workoutData.length) {
+	return false;
+    }
+
+    const epsilon = 0.001;
+    const slopeLeft = slope(workoutData, i - 1);
+    const slopeRight = slope(workoutData, i);
+
+    return Math.abs(slopeLeft - slopeRight) >= epsilon;
+}
+
+/*
+ * The base intervals are either STEADY_STATE or RAMP intervals. We
+ * will look for OVER_UNDER intervals after determining the base
+ * intervals.
+ */
+function getBaseIntervals(workoutData) {
+    let intervals = [];
+    let intervalStart = 0;
+
+    for (let i = 1; i < workoutData.length; i++) {
+	if (slopeChange(workoutData, i) && !slopeChange(workoutData, i + 1)) {
+	    const duration = workoutData[i].seconds - workoutData[intervalStart].seconds,
+		  powerLow = workoutData[intervalStart].ftpPercent,
+		  powerHigh = Math.round(powerLow + duration * slope(workoutData, intervalStart)),
+		  type = powerLow === powerHigh ? IntervalType.STEADY_STATE : IntervalType.RAMP;
+	    intervals.push({type: type, duration: duration, powerLow: powerLow, powerHigh: powerHigh});
+	    intervalStart = i;
+	}
+    }
+
+    return intervals;
+}
+
+/*
+ * Convert base intervals into over-under intervals where applicable.
+ */
+function convertOverUnders(intervals) {
+    // Calculate repeat counts for alternating identical STEADY_STATE intervals
+    intervals.forEach(i => {i.repeat = i.type === IntervalType.STEADY_STATE ? 1 : 0});
+    for (let i = intervals.length - 3; i >= 0; i--) {
+	if (intervals[i].type === IntervalType.STEADY_STATE &&
+	    intervals[i].duration === intervals[i + 2].duration &&
+	    intervals[i].powerLow === intervals[i + 2].powerLow) {
+	    intervals[i].repeat = intervals[i + 2].repeat + 1;
+	}
+    }
+
+    // Coalesce over-under sequences into a single OVER_UNDER interval
+    for (let i = 0; i + 3 < intervals.length; i++) {
+	if (intervals[i].repeat > 1 && intervals[i + 1].repeat > 1) {
+	    let overUnder = {
+		type: IntervalType.OVER_UNDER,
+		repeat: Math.min(intervals[i].repeat, intervals[i + 1].repeat),
+		onDuration: intervals[i].duration,
+		offDuration: intervals[i + 1].duration,
+		onPower: intervals[i].powerLow,
+		offPower: intervals[i + 1].powerLow,
+	    };
+	    intervals.splice(i, 2 * overUnder.repeat, overUnder);
+	}
+    }
+}
+
+/*
+ * TrainerRoad's workoutData.seconds is actually milliseconds; convert
+ * milliseconds to seconds.
+ */
+function fixTime(workoutData) {
+    workoutData.forEach(d => {d.seconds /= 1000;});
+
+    return workoutData;
+}
+
+/*
+ * Calculate Zwift intervals from TrainerRoad's workoutData array.
+ */
+function getZwiftIntervals(workoutData) {
+    let intervals = getBaseIntervals(fixTime(workoutData));
+
+    convertOverUnders(intervals);
+    return intervals;
+}
+
+/*
+ * Generate a Zwift tag from a TrainerRoad Zone.
+ */
+function zoneToTag(zone) {
+    return zone.Description ? `\t\t<tag name="${zone.Description}"/>` : '';
+}
+
+/*
+ * Convert a Zwift interval into an XML string.
+ */
+function intervalToString(i) {
+    switch (i.type) {
+    case IntervalType.STEADY_STATE:
+	return `\t\t<${i.type} Duration="${i.duration}" Power="${norm(i.powerLow)}"/>`;
+    case IntervalType.RAMP:
+	return `\t\t<${i.type} Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" ` +
+	    `PowerHigh="${norm(i.powerHigh)}"/>`;
+    case IntervalType.OVER_UNDER:
+	return `\t\t<${i.type} Repeat="${i.repeat}" OnDuration="${i.onDuration}" ` +
+	    `OffDuration="${i.offDuration}" OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>`;
+    default:
+	console.log(`Unknown Zwift interval type: ${i.type}`);
+	break;
+    }
+}
+
+/*
+ * Generate a Zwift workout (filenameand XML contents) from a
+ * TrainerRoad workout object
+ */
+function generateZwiftWorkout(workout) {
+    const name = workout.Details.WorkoutName.trimEnd();
+    const workoutDescription = `${convertHTML(workout.Details.WorkoutDescription)}\n`;
+    const goalDescription = `${convertHTML(workout.Details.GoalDescription)}\n`;
+    const tags = workout.Details.Zones.map(zoneToTag).join('\n');
+    const intervals = getZwiftIntervals(workout.workoutData).map(intervalToString).join('\n');
+
+    const content = `<workout_file>\n` +
+	  `\t<author>TrainerRoad</author>\n` +
+	  `\t<name>${name}</name>\n` +
+	  `\t<description><![CDATA[${workoutDescription}\n${goalDescription}]]></description>\n` +
+	  `\t<sportType>bike</sportType>\n` +
+	  `\t<tags>\n` +
+	  `${tags}\n` +
+	  `\t</tags>\n` +
+	  `\t<workout>\n` +
+	  `${intervals}\n` +
+	  `\t</workout>\n` +
+	  `</workout_file>\n`;
+
+    return {
+	filename: `${name}.zwo`,
+	content: content,
+    }
+}
+
+/*
+ * Download a .zwo file corresponding to the current TrainerRoad workout.
+ */
+async function downloadZWO() {
+    try {
+	const match = document.location.href.match(/\/(\d*)[^/]*$/);
+	const workoutDetails = await fetchWorkoutDetails(match[1]);
+	const workout = workoutDetails.Workout;
+	const zwiftWorkout = generateZwiftWorkout(workout);
+
+	downloadStringAsFile(zwiftWorkout.content, zwiftWorkout.filename);
+    } catch (error) {
+	console.error('ZWO export failure: ', error);
+    }
+}
+
+/*
+ * Find the next button in a subtree of a sibling node of the startNode.
+ */
+function findNextButton(startNode)
+{
+    let currentNode = startNode?.nextElementSibling;
+
+    while (currentNode) {
+	let button = currentNode.querySelector('button');
+
+	if (button) {
+	    return button;
+	}
+	currentNode = currentNode.nextElementSibling;
+    }
+
+    return null;
+}
+
+/*
+ * Add a 'ZWO' button next to the 'Open in App' button, if it
+ * exists. The 'Open in App' button is impossible to identify
+ * directly, because its text is affected by i18n. However,
+ * we can look for the 'Schedule' button, which has a common
+ * great-grandparent, and is unaffected by i18n.
+ */
+function modifyButtons() {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const scheduleButton = buttons.find(button => button.textContent.trim() === "Schedule");
+    const openInAppButton = findNextButton(scheduleButton?.parentElement?.parentElement);
+
+    if (openInAppButton) {
+	const grandParent = openInAppButton.parentElement.parentElement;
+	const clone = grandParent.cloneNode(true);
+	const clonedButton = clone.getElementsByTagName('button')[0];
+	const zwoButton = document.createElement('button');
+        zwoButton.textContent = zwoButton.id = 'ZWO';
+        zwoButton.className = openInAppButton.className;
+        zwoButton.addEventListener('click', () => {downloadZWO()});
+
+	clonedButton.parentNode.replaceChild(zwoButton, clonedButton);
+        grandParent.parentNode.insertBefore(clone, null);
+    }
+    return openInAppButton;
+}
+
+const observer = new MutationObserver((mutations, obs) => {
+    try {
+	if (modifyButtons()) {
+	    observer.disconnect();
+	}
+    } catch (error) {
+	console.error('DOM modification failed: ', error);
+	observer.disconnect();
+    }
+});
+
+observer.observe(document, { childList: true, subtree: true });
+
+modifyButtons();
