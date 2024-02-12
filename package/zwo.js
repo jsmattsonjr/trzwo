@@ -65,16 +65,21 @@ function generateZwiftWorkout(workout) {
     const name = workout.Details.WorkoutName.trimEnd();
     const workoutDescription = `${convertHTML(workout.Details.WorkoutDescription)}\n`;
     const goalDescription = `${convertHTML(workout.Details.GoalDescription)}\n`;
-    const zone = workout.Details.Zones[0].Description;
+
+    let tags = '';
+
+    workout.Details?.Zones?.forEach(function(z) {
+	if (z.Description) {
+	    tags += `\n\t\t<tag name="${z.Description}"/>`;
+	}
+    });
 
     let content = `<workout_file>\n` +
 	`\t<author>TrainerRoad</author>\n` +
 	`\t<name>${name}</name>\n` +
 	`\t<description><![CDATA[${workoutDescription}\n${goalDescription}]]></description>\n` +
 	`\t<sportType>bike</sportType>\n` +
-	`\t<tags>\n`+
-	`\t\t<tag name="${zone}"/>\n` +
-        `\t</tags>\n` +
+	`\t<tags>${tags}\n\t</tags>\n` +
 	`\t<workout>\n`;
 
     getZwiftIntervals(workout).forEach(function(i) {
