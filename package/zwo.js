@@ -143,42 +143,41 @@ function zoneToTag(zone) {
     return zone.Description ? `\t\t<tag name="${zone.Description}"/>` : '';
 }
 
+function intervalToString(i) {
+    switch (i.type) {
+    case IntervalType.STEADY_STATE:
+	return `\t\t<${i.type} Duration="${i.duration}" Power="${norm(i.powerLow)}"/>`;
+    case IntervalType.RAMP:
+	return `\t\t<${i.type} Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" ` +
+	    `PowerHigh="${norm(i.powerHigh)}"/>`;
+    case IntervalType.OVER_UNDER:
+	return `\t\t<${i.type} Repeat="${i.Repeat}" OnDuration="${i.onDuration}" ` +
+	    `OffDuration="${i.offDuration}" OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>`;
+    default:
+	console.log(`Unknown Zwift interval type: ${i.type}`);
+	break;
+    }
+}
+
 function generateZwiftWorkout(workout) {
     const name = workout.Details.WorkoutName.trimEnd();
     const workoutDescription = `${convertHTML(workout.Details.WorkoutDescription)}\n`;
     const goalDescription = `${convertHTML(workout.Details.GoalDescription)}\n`;
     const tags = workout.Details.Zones.map(zoneToTag).join('\n');
+    const intervals = getZwiftIntervals(workout.workoutData).map(intervalToString).join('\n');
 
-    let content = `<workout_file>\n` +
-	`\t<author>TrainerRoad</author>\n` +
-	`\t<name>${name}</name>\n` +
-	`\t<description><![CDATA[${workoutDescription}\n${goalDescription}]]></description>\n` +
-	`\t<sportType>bike</sportType>\n` +
-	`\t<tags>\n` +
-	`${tags}\n` +
-	`\t</tags>\n` +
-	`\t<workout>\n`;
-
-    getZwiftIntervals(workout.workoutData).forEach(function(i) {
-	switch (i.type) {
-	case IntervalType.STEADY_STATE:
-	    content += `\t\t<${i.type} Duration="${i.duration}" Power="${norm(i.powerLow)}"/>\n`;
-	    break;
-	case IntervalType.RAMP:
-	    content += `\t\t<${i.type} Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" ` +
-		`PowerHigh="${norm(i.powerHigh)}"/>\n`;
-	    break;
-	case IntervalType.OVER_UNDER:
-	    content += `\t\t<${i.type} Repeat="${i.Repeat}" OnDuration="${i.onDuration}" ` +
-		`OffDuration="${i.offDuration}" OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>\n`;
-	    break;
-	default:
-	    console.log(`Unknown Zwift interval type: ${i.type}`);
-	    break;
-	}
-    });
-
-    content += `\t</workout>\n</workout_file>\n`;
+    const content = `<workout_file>\n` +
+	  `\t<author>TrainerRoad</author>\n` +
+	  `\t<name>${name}</name>\n` +
+	  `\t<description><![CDATA[${workoutDescription}\n${goalDescription}]]></description>\n` +
+	  `\t<sportType>bike</sportType>\n` +
+	  `\t<tags>\n` +
+	  `${tags}\n` +
+	  `\t</tags>\n` +
+	  `\t<workout>\n` +
+	  `${intervals}\n` +
+	  `\t</workout>\n` +
+	  `</workout_file>\n`;
 
     return {
 	filename: `${name}.zwo`,
