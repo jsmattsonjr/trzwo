@@ -130,13 +130,13 @@ function convertOverUnders(intervals) {
 	if (intervals[i].repeat > 1 && intervals[i + 1].repeat > 1) {
 	    let overUnder = {
 		type: IntervalType.OVER_UNDER,
-		Repeat: Math.min(intervals[i].repeat, intervals[i + 1].repeat),
+		repeat: Math.min(intervals[i].repeat, intervals[i + 1].repeat),
 		onDuration: intervals[i].duration,
 		offDuration: intervals[i + 1].duration,
 		onPower: intervals[i].powerLow,
 		offPower: intervals[i + 1].powerLow,
 	    };
-	    intervals.splice(i, 2 * overUnder.Repeat, overUnder);
+	    intervals.splice(i, 2 * overUnder.repeat, overUnder);
 	}
     }
 }
@@ -179,7 +179,7 @@ function intervalToString(i) {
 	return `\t\t<${i.type} Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" ` +
 	    `PowerHigh="${norm(i.powerHigh)}"/>`;
     case IntervalType.OVER_UNDER:
-	return `\t\t<${i.type} Repeat="${i.Repeat}" OnDuration="${i.onDuration}" ` +
+	return `\t\t<${i.type} Repeat="${i.repeat}" OnDuration="${i.onDuration}" ` +
 	    `OffDuration="${i.offDuration}" OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>`;
     default:
 	console.log(`Unknown Zwift interval type: ${i.type}`);
