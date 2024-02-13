@@ -4,6 +4,10 @@ const IntervalType = Object.freeze({
     OVER_UNDER: 'IntervalsT',
 });
 
+/*
+ * Convert HTML content into plain text by removing HTML tags and
+ * ensuring spacing between sentences.
+ */
 function convertHTML(html) {
     const temp = document.createElement('div');
     temp.innerHTML = html;
@@ -11,11 +15,19 @@ function convertHTML(html) {
     return text.replace(/([\.?!])([A-Z])/g, '$1 $2');
 }
 
+/*
+ * Normalize a percentage value to a decimal string formatted to two
+ * decimal places.
+ */
 function norm(percentage) {
     const value = percentage / 100;
     return value.toFixed(2);
 }
 
+/*
+ * Trigger a download of a given string as a file in the user's
+ * browser.
+ */
 function downloadStringAsFile(contentString, filename) {
     const blob = new Blob([contentString], {type: 'text/plain'});
     const url = URL.createObjectURL(blob);
@@ -31,6 +43,9 @@ function downloadStringAsFile(contentString, filename) {
     URL.revokeObjectURL(url);
 }
 
+/*
+ * Asynchronously fetch workout details from the TrainerRoad API endpoint.
+ */
 async function fetchWorkoutDetails(workoutId) {
     const url = `https://www.trainerroad.com/api/workoutdetails/${workoutId}`;
     const response = await fetch(url, {credentials: 'include'});
@@ -93,7 +108,9 @@ function getBaseIntervals(workoutData) {
     return intervals;
 }
 
-// Find over-under intervals (example: 5516-mono)
+/*
+ * Convert base intervals into over-under intervals where applicable.
+ */
 function convertOverUnders(intervals) {
     // Calculate repeat counts for alternating identical STEADY_STATE intervals
     let repeat = intervals.map(i => i.type === IntervalType.STEADY_STATE ? 1 : 0);
@@ -133,16 +150,25 @@ function fixTime(workoutData) {
     return workoutData;
 }
 
+/*
+ * Calculate Zwift intervals from TrainerRoad's workoutData array.
+ */
 function getZwiftIntervals(workoutData) {
     let intervals = getBaseIntervals(fixTime(workoutData));
     convertOverUnders(intervals);
     return intervals;
 }
 
+/*
+ * Generate a Zwift tag from a TrainerRoad Zone.
+ */
 function zoneToTag(zone) {
     return zone.Description ? `\t\t<tag name="${zone.Description}"/>` : '';
 }
 
+/*
+ * Convert a Zwift interval into an XML string.
+ */
 function intervalToString(i) {
     switch (i.type) {
     case IntervalType.STEADY_STATE:
@@ -159,6 +185,10 @@ function intervalToString(i) {
     }
 }
 
+/*
+ * Generate a Zwift workout (filenameand XML contents) from a
+ * TrainerRoad workout object
+ */
 function generateZwiftWorkout(workout) {
     const name = workout.Details.WorkoutName.trimEnd();
     const workoutDescription = `${convertHTML(workout.Details.WorkoutDescription)}\n`;
@@ -185,6 +215,9 @@ function generateZwiftWorkout(workout) {
     }
 }
 
+/*
+ * Download a .zwo file corresponding to the current TrainerRoad workout.
+ */
 async function downloadZWO() {
     try {
 	const match = document.location.href.match(/\/(\d*)[^/]*$/);
@@ -197,6 +230,11 @@ async function downloadZWO() {
     }
 }
 
+/*
+ * Add a 'ZWO' button next to the 'Open in App' button, if it
+ * exists. Remove the 'ZWO' button if the 'Open in App' button goes
+ * away.
+ */
 function checkAndModifyButtons() {
     // Use querySelectorAll to get all buttons, then filter them by their text content
     const allButtons = document.getElementsByTagName('button');
