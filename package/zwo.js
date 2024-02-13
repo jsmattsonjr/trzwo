@@ -139,25 +139,24 @@ function getZwiftIntervals(workoutData) {
     return intervals;
 }
 
+function zoneToTag(zone) {
+    return zone.Description ? `\t\t<tag name="${zone.Description}"/>` : '';
+}
+
 function generateZwiftWorkout(workout) {
     const name = workout.Details.WorkoutName.trimEnd();
     const workoutDescription = `${convertHTML(workout.Details.WorkoutDescription)}\n`;
     const goalDescription = `${convertHTML(workout.Details.GoalDescription)}\n`;
-
-    let tags = '';
-
-    workout.Details?.Zones?.forEach(function(z) {
-	if (z.Description) {
-	    tags += `\n\t\t<tag name="${z.Description}"/>`;
-	}
-    });
+    const tags = workout.Details.Zones.map(zoneToTag).join('\n');
 
     let content = `<workout_file>\n` +
 	`\t<author>TrainerRoad</author>\n` +
 	`\t<name>${name}</name>\n` +
 	`\t<description><![CDATA[${workoutDescription}\n${goalDescription}]]></description>\n` +
 	`\t<sportType>bike</sportType>\n` +
-	`\t<tags>${tags}\n\t</tags>\n` +
+	`\t<tags>\n` +
+	`${tags}\n` +
+	`\t</tags>\n` +
 	`\t<workout>\n`;
 
     getZwiftIntervals(workout.workoutData).forEach(function(i) {
