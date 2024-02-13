@@ -20,8 +20,7 @@ function convertHTML(html) {
  * decimal places.
  */
 function norm(percentage) {
-    const value = percentage / 100;
-    return value.toFixed(2);
+    return (percentage / 100).toFixed(2);
 }
 
 /*
