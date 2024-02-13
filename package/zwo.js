@@ -62,8 +62,8 @@ async function fetchWorkoutDetails(workoutId) {
  * from workoutData[i] to workoutData[i + 1].
  */
 function slope(workoutData, i) {
-    const deltaPower = workoutData[i + 1].ftpPercent - workoutData[i].ftpPercent,
-	  deltaTime = workoutData[i + 1].seconds - workoutData[i].seconds;
+    const deltaPower = workoutData[i + 1].ftpPercent - workoutData[i].ftpPercent;
+    const deltaTime = workoutData[i + 1].seconds - workoutData[i].seconds;
 
     return deltaPower / deltaTime;
 }
@@ -80,9 +80,10 @@ function slopeChange(workoutData, i) {
     if (i >= workoutData.length) {
 	return false;
     }
-    const epsilon = 0.001,
-	  slopeLeft = slope(workoutData, i - 1),
-	  slopeRight = slope(workoutData, i);
+
+    const epsilon = 0.001;
+    const slopeLeft = slope(workoutData, i - 1);
+    const slopeRight = slope(workoutData, i);
 
     return Math.abs(slopeLeft - slopeRight) >= epsilon;
 }
@@ -93,8 +94,8 @@ function slopeChange(workoutData, i) {
  * intervals.
  */
 function getBaseIntervals(workoutData) {
-    let intervals = [],
-	intervalStart = 0;
+    let intervals = [];
+    let intervalStart = 0;
 
     for (let i = 1; i < workoutData.length; i++) {
 	if (slopeChange(workoutData, i) && !slopeChange(workoutData, i + 1)) {
@@ -157,6 +158,7 @@ function fixTime(workoutData) {
  */
 function getZwiftIntervals(workoutData) {
     let intervals = getBaseIntervals(fixTime(workoutData));
+
     convertOverUnders(intervals);
     return intervals;
 }
@@ -226,6 +228,7 @@ async function downloadZWO() {
 	const workoutDetails = await fetchWorkoutDetails(match[1]);
 	const workout = workoutDetails.Workout;
 	const zwiftWorkout = generateZwiftWorkout(workout);
+
 	downloadStringAsFile(zwiftWorkout.content, zwiftWorkout.filename);
     } catch (error) {
 	console.error('ZWO export failure: ', error);
