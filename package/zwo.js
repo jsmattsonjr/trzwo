@@ -7,7 +7,8 @@ const IntervalType = Object.freeze({
 function convertHTML(html) {
     const temp = document.createElement("div");
     temp.innerHTML = html;
-    return temp.textContent || temp.innerHTML || "";
+    text = temp.textContent || temp.innerHTML || "";
+    return text.replace(/([\.?!])([A-Z])/g, "$1 $2");
 }
 
 function norm(percentage) {
