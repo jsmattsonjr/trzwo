@@ -5,10 +5,10 @@ const IntervalType = Object.freeze({
 });
 
 function convertHTML(html) {
-    const temp = document.createElement("div");
+    const temp = document.createElement('div');
     temp.innerHTML = html;
-    text = temp.textContent || temp.innerHTML || "";
-    return text.replace(/([\.?!])([A-Z])/g, "$1 $2");
+    text = temp.textContent || temp.innerHTML || '';
+    return text.replace(/([\.?!])([A-Z])/g, '$1 $2');
 }
 
 function norm(percentage) {
