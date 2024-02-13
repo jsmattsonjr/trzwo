@@ -9,9 +9,12 @@ const IntervalType = Object.freeze({
  * ensuring spacing between sentences.
  */
 function convertHTML(html) {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    text = temp.textContent || temp.innerHTML || '';
+    if (!html) {
+	return '';
+    }
+
+    const text = new DOMParser().parseFromString(html, 'text/html').body.textContent;
+
     return text.replace(/([\.?!])([A-Z])/g, '$1 $2');
 }
 
