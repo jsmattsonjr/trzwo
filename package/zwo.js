@@ -161,17 +161,17 @@ function generateZwiftWorkout(workout) {
 	`\t<workout>\n`;
 
     getZwiftIntervals(workout.workoutData).forEach(function(i) {
-	content += `\t\t<${i.type} `;
 	switch (i.type) {
 	case IntervalType.STEADY_STATE:
-	    content += `Duration="${i.duration}" Power="${norm(i.powerLow)}"/>\n`;
+	    content += `\t\t<${i.type} Duration="${i.duration}" Power="${norm(i.powerLow)}"/>\n`;
 	    break;
 	case IntervalType.RAMP:
-	    content += `Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" PowerHigh="${norm(i.powerHigh)}"/>\n`;
+	    content += `\t\t<${i.type} Duration="${i.duration}" PowerLow="${norm(i.powerLow)}" ` +
+		`PowerHigh="${norm(i.powerHigh)}"/>\n`;
 	    break;
 	case IntervalType.OVER_UNDER:
-	    content += `Repeat="${i.Repeat}" OnDuration="${i.onDuration}" OffDuration="${i.offDuration}" ` +
-		`OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>\n`;
+	    content += `\t\t<${i.type} Repeat="${i.Repeat}" OnDuration="${i.onDuration}" ` +
+		`OffDuration="${i.offDuration}" OnPower="${norm(i.onPower)}" OffPower="${norm(i.offPower)}"/>\n`;
 	    break;
 	default:
 	    console.log(`Unknown Zwift interval type: ${i.type}`);
