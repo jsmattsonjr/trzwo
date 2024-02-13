@@ -116,29 +116,27 @@ function getBaseIntervals(workoutData) {
  */
 function convertOverUnders(intervals) {
     // Calculate repeat counts for alternating identical STEADY_STATE intervals
-    let repeat = intervals.map(i => i.type === IntervalType.STEADY_STATE ? 1 : 0);
-
+    intervals.forEach(i => {i.repeat = i.type === IntervalType.STEADY_STATE ? 1 : 0});
     for (let i = intervals.length - 3; i >= 0; i--) {
 	if (intervals[i].type === IntervalType.STEADY_STATE &&
 	    intervals[i].duration === intervals[i + 2].duration &&
 	    intervals[i].powerLow === intervals[i + 2].powerLow) {
-	    repeat[i] = repeat[i + 2] + 1;
+	    intervals[i].repeat = intervals[i + 2].repeat + 1;
 	}
     }
 
     // Coalesce over-under sequences into a single OVER_UNDER interval
     for (let i = 0; i + 3 < intervals.length; i++) {
-	if (repeat[i] > 1 && repeat[i + 1] > 1) {
+	if (intervals[i].repeat > 1 && intervals[i + 1].repeat > 1) {
 	    let overUnder = {
 		type: IntervalType.OVER_UNDER,
-		Repeat: Math.min(repeat[i], repeat[i + 1]),
+		Repeat: Math.min(intervals[i].repeat, intervals[i + 1].repeat),
 		onDuration: intervals[i].duration,
 		offDuration: intervals[i + 1].duration,
 		onPower: intervals[i].powerLow,
 		offPower: intervals[i + 1].powerLow,
 	    };
 	    intervals.splice(i, 2 * overUnder.Repeat, overUnder);
-	    repeat.splice(i, 2 * overUnder.Repeat, 0);
 	}
     }
 }
