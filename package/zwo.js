@@ -185,9 +185,10 @@ function generateZwiftWorkout(workout) {
     }
 }
 
-async function downloadZWO(workoutId) {
+async function downloadZWO() {
     try {
-	const workoutDetails = await fetchWorkoutDetails(workoutId);
+	const match = document.location.href.match(/\/(\d*)[^/]*$/);
+	const workoutDetails = await fetchWorkoutDetails(match[1]);
 	const workout = workoutDetails.Workout;
 	const zwiftWorkout = generateZwiftWorkout(workout);
 	downloadStringAsFile(zwiftWorkout.content, zwiftWorkout.filename);
@@ -211,10 +212,7 @@ function checkAndModifyButtons() {
         zwoButton = document.createElement('button');
         zwoButton.textContent = zwoButton.id = 'ZWO';
         zwoButton.className = openInAppButton.className;
-        zwoButton.addEventListener('click', function() {
-	    const workoutId = document.location.href.split('/').pop().split('-')[0];
-	    downloadZWO(workoutId);
-        });
+        zwoButton.addEventListener('click', () => {downloadZWO()});
 
 	clonedButton.parentNode.replaceChild(zwoButton, clonedButton);
 
