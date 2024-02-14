@@ -234,40 +234,62 @@ async function downloadZWO() {
 }
 
 /*
- * Add a 'ZWO' button next to the 'Open in App' button, if it
- * exists. Remove the 'ZWO' button if the 'Open in App' button goes
- * away.
+ * Find the next button in a subtree of a sibling node of the startNode.
  */
-function checkAndModifyButtons() {
-    // Use querySelectorAll to get all buttons, then filter them by their text content
-    const allButtons = document.getElementsByTagName('button');
-    const openInAppButton = Array.from(allButtons).find(button => button.textContent === 'Open in App');
-    let zwoButton = document.getElementById('ZWO');
+function findNextButton(startNode)
+{
+    let currentNode = startNode?.nextElementSibling;
 
-    if (openInAppButton && !zwoButton) {
+    while (currentNode) {
+	let button = currentNode.querySelector('button');
+
+	if (button) {
+	    return button;
+	}
+	currentNode = currentNode.nextElementSibling;
+    }
+
+    return null;
+}
+
+/*
+ * Add a 'ZWO' button next to the 'Open in App' button, if it
+ * exists. The 'Open in App' button is impossible to identify
+ * directly, because its text is affected by i18n. However,
+ * we can look for the 'Schedule' button, which has a common
+ * great-grandparent, and is unaffected by i18n.
+ */
+function modifyButtons() {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const scheduleButton = buttons.find(button => button.textContent.trim() === "Schedule");
+    const openInAppButton = findNextButton(scheduleButton?.parentElement?.parentElement);
+
+    if (openInAppButton) {
 	const grandParent = openInAppButton.parentElement.parentElement;
 	const clone = grandParent.cloneNode(true);
-
 	const clonedButton = clone.getElementsByTagName('button')[0];
-
-        zwoButton = document.createElement('button');
+	const zwoButton = document.createElement('button');
         zwoButton.textContent = zwoButton.id = 'ZWO';
         zwoButton.className = openInAppButton.className;
         zwoButton.addEventListener('click', () => {downloadZWO()});
 
 	clonedButton.parentNode.replaceChild(zwoButton, clonedButton);
-
-        grandParent.parentNode.insertBefore(clone, grandParent.nextSibling);
-    } else if (zwoButton && !openInAppButton) {
-	const grandParent = zwoButton.parentElement.parentElement;
-	grandParent.parentNode.removeChild(grandParent);
+        grandParent.parentNode.insertBefore(clone, null);
     }
+    return openInAppButton;
 }
 
 const observer = new MutationObserver((mutations, obs) => {
-    checkAndModifyButtons();
+    try {
+	if (modifyButtons()) {
+	    observer.disconnect();
+	}
+    } catch (error) {
+	console.error('DOM modification failed: ', error);
+	observer.disconnect();
+    }
 });
 
 observer.observe(document, { childList: true, subtree: true });
 
-checkAndModifyButtons();
+modifyButtons();
