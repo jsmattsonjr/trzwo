@@ -1,19 +1,31 @@
 {
-    "manifest_version": 3,
+  "manifest_version": 3,
 
-    "name": "Zwift ZWO Download for TrainerRoad",
-    "version": "2024.2.14",
-    "description": "Seamlessly convert and download TrainerRoad workouts for Zwift in one click",
+  "name": "Zwift ZWO Download for TrainerRoad",
+  "version": "2024.2.29",
+  "description": "Seamlessly convert and download TrainerRoad workouts for Zwift in one click",
 
-    "icons": {
-	"16": "zwo16.png",
-	"32": "zwo32.png",
-	"48": "zwo48.png",
-	"128": "zwo128.png"
-    },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
 
-    "content_scripts": [{
-      "js": ["zwo.js"],
-      "matches": ["https://www.trainerroad.com/app/cycling/workouts/*"]
-    }]
-  }
+  "icons": {
+    "16": "zwo16.png",
+    "32": "zwo32.png",
+    "48": "zwo48.png",
+    "128": "zwo128.png"
+  },
+
+  "content_scripts": [{
+    "js": ["zwo.js"],
+    "css": ["zwo.css"],
+    "matches": ["https://www.trainerroad.com/app/cycling/workouts/*"],
+    "run_at": "document_start"
+  }],
+
+  "permissions": [
+    "storage"
+  ]
+
+}

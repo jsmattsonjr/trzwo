@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Options</title>
+    <style>
+      input[type=number] {
+        width: 50px;
+      }
+      .option-group {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .option-group label, .option-group select {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .option-group div {
+        margin-top: 10px;
+        padding-left: 20px;
+        font-style: italic;
+        color: #666;
+      }
+      button {
+        margin-right: 10px;
+      }
+    </style>
+</head>
+<body>
+  <div class="option-group">
+    <label for="rampConversion">Ramp Conversion to Steady-State:</label>
+    <select id="rampConversion">
+      <option value="none">None</option>
+      <option value="internal">Internal</option>
+      <option value="all">All</option>
+    </select>
+    <div id="rampConversionDesc">Description for Ramp Conversion</div>
+  </div>
+
+  <div class="option-group">
+    <label for="ouConversion">Steady-State Conversion to Over-Under:</label>
+    <select id="ouConversion">
+      <option value="strict">Strict</option>
+      <option value="loose">Loose</option>
+      <option value="none">None</option>
+    </select>
+    <div id="ouConversionDesc">Description for Over-Under Conversion</div>
+  </div>
+
+  <p>
+    <button id="save">Save</button>
+    <button id="restoreDefaults">Restore Defaults</button>
+  </p>
+
+  <script src="options.js"></script>
+</body>
+</html>
