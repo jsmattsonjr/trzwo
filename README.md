@@ -20,7 +20,7 @@ Here’s how easy it is:
 4. Place the file in your Zwift ‘Workouts’ folder, under your Zwift ID directory.
 
 User-configurable options (available from the extension's 'Details' page or by right-clicking the extension's icon in the toolbar, if you have it pinned):
-1. Ramp to Steady-State Conversion
+1. Ramp to Steady-State Conversion:
     - None: Leave the ramps as found in the TrainerRoad workout.
     - Internal: Leave only warmup/cooldown ramps (if any).
     - All: Convert all ramps to steady-state intervals.
@@ -34,6 +34,8 @@ Need help importing workouts? Zwift Support offers a comprehensive guide here:
 <https://support.zwift.com/en_us/custom-workouts-ryGOTVEPs>
 
 Source code available at <https://github.com/jsmattsonjr/trzwo>
+
+Not associated with TrainerRoad or Zwift.
 
 Known issues:
 
