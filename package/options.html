@@ -33,7 +33,7 @@
 <body>
   <div class="option-group">
     <label for="rampConversion">Ramp Conversion to Steady-State:</label>
-    <select id="rampConversion">
+    <select id="rampConversion" aria-describedby="rampConversionDesc">
       <option value="none">None</option>
       <option value="internal">Internal</option>
       <option value="all">All</option>
@@ -43,7 +43,7 @@
 
   <div class="option-group">
     <label for="ouConversion">Steady-State Conversion to Over-Under:</label>
-    <select id="ouConversion">
+    <select id="ouConversion" aria-describedby="ouConversionDesc">
       <option value="strict">Strict</option>
       <option value="loose">Loose</option>
       <option value="none">None</option>
