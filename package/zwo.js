@@ -22,7 +22,7 @@ const IntervalType = Object.freeze({
 /**
  * Determines the Zwift intervals from the provided workout data based on the
  * given options. The workout data is expected to be an array of objects with
- * 'seconds' [sic] and 'ftpPercent' attributes, indicating the power target
+ * 'Seconds' [sic] and 'FtpPercent' attributes, indicating the power target
  * beginning at the given time.
  * @param {Array} data - The workout data to analyze.
  * @param {Object} options - The options for analyzing the intervals.
@@ -37,19 +37,19 @@ function getZwiftIntervals(data, options) {
    */
   function validWorkoutData(data) {
     if (!Array.isArray(data)) {
-      console.log('workoutData is not an array');
+      console.log('WorkoutData is not an array');
       return false;
     }
     if (data.length < 2) {
-      console.log('workoutData has less than 2 data points');
+      console.log('WorkoutData has less than 2 data points');
       return false;
     }
     if (data.some((dataPoint, index) =>
-      typeof dataPoint?.seconds !== 'number' || dataPoint.seconds < 0 ||
-      typeof dataPoint?.ftpPercent !== 'number' || dataPoint.ftpPercent < 0 ||
-      dataPoint.seconds % 1000 !== 0 ||
-      (index > 0 && (data[index].seconds <= data[index - 1].seconds)))) {
-      console.log('workoutData contains invalid data points');
+      typeof dataPoint?.Seconds !== 'number' || dataPoint.Seconds < 0 ||
+      typeof dataPoint?.FtpPercent !== 'number' || dataPoint.FtpPercent < 0 ||
+      dataPoint.Seconds % 1000 !== 0 ||
+      (index > 0 && (data[index].Seconds <= data[index - 1].Seconds)))) {
+      console.log('WorkoutData contains invalid data points');
       return false;
     }
     return true;
@@ -59,7 +59,7 @@ function getZwiftIntervals(data, options) {
   /**
    * Finds the simple (steady state and ramp) intervals in a dataset based on
    * changes in slope.
-   * @param {Array} data - The dataset containing 'seconds' and 'ftpPercent'
+   * @param {Array} data - The dataset containing 'Seconds' and 'FtpPercent'
    *                       attributes.
    * @param {Object} options - Additional options for calculating intervals.
    * @return {Array} - An array of intervals
@@ -88,36 +88,36 @@ function getZwiftIntervals(data, options) {
            (index > 0 && index < data.length - 1));
     }
 
-    // Generate a new dataset with the seconds attribute corrected and
+    // Generate a new dataset with the Seconds attribute corrected and
     // an additional slope attribute, indicating the slope from that datapoint
     // to the next.
     data = data.map((dataPoint, index) => {
-      const seconds = dataPoint.seconds / 1000; // Convert from milliseconds
-      const ftpPercent = dataPoint.ftpPercent;
+      const Seconds = dataPoint.Seconds / 1000; // Convert from milliSeconds
+      const FtpPercent = dataPoint.FtpPercent;
       if (index === data.length - 1) {
-        return {seconds, ftpPercent};
+        return {Seconds, FtpPercent};
       } else {
-        const deltaPower = data[index + 1].ftpPercent - data[index].ftpPercent;
-        const deltaTime = data[index + 1].seconds - data[index].seconds;
+        const deltaPower = data[index + 1].FtpPercent - data[index].FtpPercent;
+        const deltaTime = data[index + 1].Seconds - data[index].Seconds;
         const slope = deltaPower / (deltaTime / 1000); // %FTP/sec
-        return {seconds, ftpPercent, slope};
+        return {Seconds, FtpPercent, slope};
       }
     });
 
     /*
      * Identify workout intervals by detecting changes in the gradient
-     * (slope) of ftpPercent over time.  An interval is considered to
+     * (slope) of FtpPercent over time.  An interval is considered to
      * end at index i (and a new one starts at the same index) if
      * there's a slope change at index i but not at index i + 1. This
      * method is based on the observation that discontinuities in
-     * ftpPercent values are not present in the dataset. Instead, only
-     * the ftpPercent value immediately after a discontinuity is
+     * FtpPercent values are not present in the dataset. Instead, only
+     * the FtpPercent value immediately after a discontinuity is
      * recorded, leading to an apparent early change in slope.
      *
      * For instance, consider a scenario with a steady state interval
      * at 80% FTP followed by another at 100% FTP:
      *
-     * Time (ms) | ftpPercent
+     * Time (ms) | FtpPercent
      * ----------------------
      * 57000     | 80
      * 58000     | 80
@@ -143,8 +143,8 @@ function getZwiftIntervals(data, options) {
     for (let index = 1, start = 0; index < data.length; index++) {
       if (index == data.length - 1 ||
           (slopeChange(index) && !slopeChange(index + 1))) {
-        const duration = data[index].seconds - data[start].seconds;
-        let startPower = data[start].ftpPercent;
+        const duration = data[index].Seconds - data[start].Seconds;
+        let startPower = data[start].FtpPercent;
         // Ending power target must be inferred from the slope.
         let endPower = Math.round(startPower + duration * data[start].slope);
         if (doRampConversion(index)) {
@@ -400,7 +400,7 @@ function generateZwiftWorkout(workout, options) {
   const workoutDescription = `${htmlToText(details?.WorkoutDescription)}\n`;
   const goalDescription = `${htmlToText(details?.GoalDescription)}\n`;
   const tags = details?.Zones?.map(zoneToTag).join('\n');
-  const intervals = getZwiftIntervals(workout?.workoutData, options);
+  const intervals = getZwiftIntervals(workout?.WorkoutData, options);
   const segments = intervals.map(intervalToString).join('\n');
 
   const content = `<workout_file>\n` +
