@@ -35,8 +35,10 @@ Need help importing workouts? Zwift Support offers a comprehensive guide here:
 
 Source code available at <https://github.com/jsmattsonjr/trzwo>
 
-Not associated with TrainerRoad or Zwift.
+Please report any issues via <https://github.com/jsmattsonjr/trzwo/issues.>
 
 Known issues:
 
 * Sometimes the ZWO button does not appear until the page is reloaded.
+
+Not associated with TrainerRoad or Zwift.
