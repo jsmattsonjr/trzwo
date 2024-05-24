@@ -37,8 +37,12 @@ Source code available at <https://github.com/jsmattsonjr/trzwo>
 
 Please report any issues via <https://github.com/jsmattsonjr/trzwo/issues.>
 
-Known issues:
+Recent issues:
 
-* Sometimes the ZWO button does not appear until the page is reloaded.
+*  9 May 2024 - Workout bodies were empty, because the format of the
+                TrainerRoad workout files changed slightly.
+* 25 May 2024 - The ZWO button didn't appear, because the 'Schedule'
+                button was changed to 'Add to Calendar'.
+
 
 Not associated with TrainerRoad or Zwift.

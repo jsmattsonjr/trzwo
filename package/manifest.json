@@ -2,7 +2,7 @@
   "manifest_version": 3,
 
   "name": "Zwift ZWO Download for TrainerRoad",
-  "version": "2024.5.9",
+  "version": "2024.5.25",
   "description": "Seamlessly convert and download TrainerRoad workouts for Zwift in one click",
 
   "options_ui": {
