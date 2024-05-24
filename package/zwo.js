@@ -528,7 +528,7 @@ async function downloadZWO() {
  * Adds a 'ZWO' button next to the 'Open in App' button, if it
  * exists. The 'Open in App' button is impossible to identify
  * directly, because its text is affected by i18n. However, we can
- * look for the 'Schedule' button, which has a common
+ * look for the 'Add to Calendar' button, which has a common
  * great-grandparent, and is unaffected by i18n.
  * @return {boolean} Returns true if the openInAppButton is found,
  *                   otherwise false.
@@ -563,7 +563,7 @@ function modifyButtons() {
 
   const documentButtons = Array.from(document.querySelectorAll('button'));
   const scheduleButton = documentButtons.find(function(button) {
-    return button.textContent.trim() === 'Schedule';
+    return button.textContent.trim() === 'Add to Calendar';
   });
   const scheduleButtonGrandparent = grandParentElement(scheduleButton);
   const openInAppButton = findNextSiblingButton(scheduleButtonGrandparent);
