@@ -88,19 +88,19 @@ function getZwiftIntervals(data, options) {
            (index > 0 && index < data.length - 1));
     }
 
-    // Generate a new dataset with the Seconds attribute corrected and
+    // Generate a new dataset with the seconds attribute corrected and
     // an additional slope attribute, indicating the slope from that datapoint
     // to the next.
     data = data.map((dataPoint, index) => {
-      const Seconds = dataPoint.Seconds / 1000; // Convert from milliSeconds
-      const FtpPercent = dataPoint.FtpPercent;
+      const seconds = dataPoint.Seconds / 1000; // Convert from milliSeconds
+      const ftpPercent = dataPoint.FtpPercent;
       if (index === data.length - 1) {
-        return {Seconds, FtpPercent};
+        return {seconds, ftpPercent};
       } else {
         const deltaPower = data[index + 1].FtpPercent - data[index].FtpPercent;
         const deltaTime = data[index + 1].Seconds - data[index].Seconds;
         const slope = deltaPower / (deltaTime / 1000); // %FTP/sec
-        return {Seconds, FtpPercent, slope};
+        return {seconds, ftpPercent, slope};
       }
     });
 
@@ -117,7 +117,7 @@ function getZwiftIntervals(data, options) {
      * For instance, consider a scenario with a steady state interval
      * at 80% FTP followed by another at 100% FTP:
      *
-     * Time (ms) | FtpPercent
+     * Time (ms) | FTP %
      * ----------------------
      * 57000     | 80
      * 58000     | 80
@@ -143,8 +143,8 @@ function getZwiftIntervals(data, options) {
     for (let index = 1, start = 0; index < data.length; index++) {
       if (index == data.length - 1 ||
           (slopeChange(index) && !slopeChange(index + 1))) {
-        const duration = data[index].Seconds - data[start].Seconds;
-        let startPower = data[start].FtpPercent;
+        const duration = data[index].seconds - data[start].seconds;
+        let startPower = data[start].ftpPercent;
         // Ending power target must be inferred from the slope.
         let endPower = Math.round(startPower + duration * data[start].slope);
         if (doRampConversion(index)) {
